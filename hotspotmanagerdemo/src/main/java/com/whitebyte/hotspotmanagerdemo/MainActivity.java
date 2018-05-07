@@ -22,15 +22,22 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import com.njay.hotshot.Client;
+import com.njay.hotshot.HotShotController;
+
+
 import java.util.ArrayList;
 
 import info.whitebyte.hotspotmanager.ClientScanResult;
 import info.whitebyte.hotspotmanager.FinishScanListener;
 import info.whitebyte.hotspotmanager.WifiApManager;
 
+
 public class MainActivity extends Activity {
     TextView textView1;
     WifiApManager wifiApManager;
+    HotShotController hotShotController;
+
 
     /**
      * Called when the activity is first created.
@@ -43,56 +50,78 @@ public class MainActivity extends Activity {
         textView1 = (TextView) findViewById(R.id.textView1);
 
         wifiApManager = new WifiApManager(this);
+        hotShotController = new HotShotController(this);
 
         // force to show the settings page for demonstration purpose of this method
-        wifiApManager.showWritePermissionSettings(true);
+        //wifiApManager.showWritePermissionSettings(true);
+        hotShotController.showWritePermissionSettings(false);
 
-        scan();
+        scanAll();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        wifiApManager.showWritePermissionSettings(false);
+        //wifiApManager.showWritePermissionSettings(false);
+        hotShotController.showWritePermissionSettings(false);
     }
 
-    private void scan() {
-        wifiApManager.getClientList(false, new FinishScanListener() {
-
+    private void scanAll() {
+        hotShotController.getClientList(false, new com.njay.hotshot.FinishScanListener() {
             @Override
-            public void onFinishScan(final ArrayList<ClientScanResult> clients) {
-
+            public void onFinishScan(ArrayList<Client> clients) {
                 textView1.setText("WifiApState: " + wifiApManager.getWifiApState() + "\n\n");
                 textView1.append("Clients: \n");
-                for (ClientScanResult clientScanResult : clients) {
+                for (Client clientlist : clients) {
                     textView1.append("####################\n");
-                    textView1.append("IpAddr: " + clientScanResult.getIpAddr() + "\n");
-                    textView1.append("Device: " + clientScanResult.getDevice() + "\n");
-                    textView1.append("HWAddr: " + clientScanResult.getHWAddr() + "\n");
-                    textView1.append("isReachable: " + clientScanResult.isReachable() + "\n");
+                    textView1.append("IpAddr: " + clientlist.getIpAddress() + "\n");
+                    textView1.append("Device: " + clientlist.getDevice() + "\n");
+                    textView1.append("HWAddr: " + clientlist.getHwAddress() + "\n");
+                    textView1.append("isReachable: " + clientlist.isReachable() + "\n");
+                }
+            }
+        });
+    }
+
+    private void scanReachable() {
+        hotShotController.getClientList(true, new com.njay.hotshot.FinishScanListener() {
+            @Override
+            public void onFinishScan(ArrayList<Client> clients) {
+                textView1.setText("WifiApState: " + wifiApManager.getWifiApState() + "\n\n");
+                textView1.append("Clients: \n");
+                for (Client clientlist : clients) {
+                    textView1.append("####################\n");
+                    textView1.append("IpAddr: " + clientlist.getIpAddress() + "\n");
+                    textView1.append("Device: " + clientlist.getDevice() + "\n");
+                    textView1.append("HWAddr: " + clientlist.getHwAddress() + "\n");
+                    textView1.append("isReachable: " + clientlist.isReachable() + "\n");
                 }
             }
         });
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 0, 0, "Get Clients");
-        menu.add(0, 1, 0, "Open AP");
-        menu.add(0, 2, 0, "Close AP");
+        menu.add(0, 0, 0, "Get All Clients");
+        menu.add(0,1,0,"Get reachable Clients");
+        menu.add(0, 2, 0, "Open AP");
+        menu.add(0, 3, 0, "Close AP");
         return super.onCreateOptionsMenu(menu);
     }
 
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
         switch (item.getItemId()) {
             case 0:
-                scan();
-                break;
-            case 1:
-                wifiApManager.setWifiApEnabled(null, true);
+                scanAll();
                 break;
             case 2:
-                wifiApManager.setWifiApEnabled(null, false);
+                hotShotController.setWifiApEnabled(null, true);
+                break;
+            case 3:
+                hotShotController.setWifiApEnabled(null, false);
+                break;
+            case 1:
+                scanReachable();
                 break;
         }
 

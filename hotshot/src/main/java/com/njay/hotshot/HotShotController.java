@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 WhiteByte (Nick Russler, Ahmet Yueksektepe).
+ * Copyright 2018 Nuwan Jayawardene.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package info.whitebyte.hotspotmanager;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.net.InetAddress;
-import java.util.ArrayList;
+package com.njay.hotshot;
 
 import android.content.Context;
 import android.content.Intent;
@@ -33,11 +25,18 @@ import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
 
-public class WifiApManager {
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.util.ArrayList;
+
+public class HotShotController {
     private final WifiManager mWifiManager;
     private Context context;
 
-    public WifiApManager(Context context) {
+    public HotShotController(Context context) {
         this.context = context;
         mWifiManager = (WifiManager) this.context.getSystemService(Context.WIFI_SERVICE);
     }
@@ -84,10 +83,10 @@ public class WifiApManager {
     /**
      * Gets the Wi-Fi enabled state.
      *
-     * @return {@link WIFI_AP_STATE}
+     * @return {@link WifiState}
      * @see #isWifiApEnabled()
      */
-    public WIFI_AP_STATE getWifiApState() {
+    public WifiState getWifiApState() {
         try {
             Method method = mWifiManager.getClass().getMethod("getWifiApState");
 
@@ -98,10 +97,10 @@ public class WifiApManager {
                 tmp = tmp - 10;
             }
 
-            return WIFI_AP_STATE.class.getEnumConstants()[tmp];
+            return WifiState.class.getEnumConstants()[tmp];
         } catch (Exception e) {
             Log.e(this.getClass().toString(), "", e);
-            return WIFI_AP_STATE.WIFI_AP_STATE_FAILED;
+            return WifiState.WIFI_AP_STATE_FAILED;
         }
     }
 
@@ -113,7 +112,7 @@ public class WifiApManager {
      * @see #getWifiApState()
      */
     public boolean isWifiApEnabled() {
-        return getWifiApState() == WIFI_AP_STATE.WIFI_AP_STATE_ENABLED;
+        return getWifiApState() == WifiState.WIFI_AP_STATE_ENABLED;
     }
 
     /**
@@ -156,19 +155,12 @@ public class WifiApManager {
         getClientList(onlyReachables, 300, finishListener);
     }
 
-    /**
-     * Gets a list of the clients connected to the Hotspot
-     *
-     * @param onlyReachables   {@code false} if the list should contain unreachable (probably disconnected) clients, {@code true} otherwise
-     * @param reachableTimeout Reachable Timout in miliseconds
-     * @param finishListener,  Interface called when the scan method finishes
-     */
     public void getClientList(final boolean onlyReachables, final int reachableTimeout, final FinishScanListener finishListener) {
         Runnable runnable = new Runnable() {
             public void run() {
 
                 BufferedReader br = null;
-                final ArrayList<ClientScanResult> result = new ArrayList<ClientScanResult>();
+                final ArrayList<Client> result = new ArrayList<Client>();
 
                 try {
                     br = new BufferedReader(new FileReader("/proc/net/arp"));
@@ -177,14 +169,13 @@ public class WifiApManager {
                         String[] splitted = line.split(" +");
 
                         if ((splitted != null) && (splitted.length >= 4)) {
-                            // Basic sanity check
                             String mac = splitted[3];
 
                             if (mac.matches("..:..:..:..:..:..")) {
                                 boolean isReachable = InetAddress.getByName(splitted[0]).isReachable(reachableTimeout);
 
                                 if (!onlyReachables || isReachable) {
-                                    result.add(new ClientScanResult(splitted[0], splitted[3], splitted[5], isReachable));
+                                    result.add(new Client(splitted[0], splitted[3], splitted[5], isReachable));
                                 }
                             }
                         }
@@ -217,3 +208,4 @@ public class WifiApManager {
 
 
 }
+
